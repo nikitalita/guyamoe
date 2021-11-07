@@ -1716,6 +1716,34 @@ function UI_Reader(o) {
 	this._.zoom_level_plus.onmousedown = e => Settings.next('lyt.zoom', undefined, true);
 	this._.zoom_level_minus.onmousedown = e => Settings.prev('lyt.zoom', undefined, true);
 	this._.share_button.onmousedown = e => this.copyShortLink(e);
+	this._.fullscreen_button.onclick = e => {
+		let elem = document.documentElement;
+		let isInFullScreen = (document.fullscreenElement && true) ||
+			(document.webkitFullscreenElement && true) ||
+			(document.mozFullScreenElement && true) ||
+			(document.msFullscreenElement && true);
+		if (isInFullScreen) {
+			if (document.exitFullscreen) {
+				document.exitFullscreen();
+			} else if (document.webkitExitFullscreen) {
+				document.webkitExitFullscreen();
+			} else if (document.mozCancelFullScreen) {
+				document.mozCancelFullScreen();
+			} else if (document.msExitFullscreen) {
+				document.msExitFullscreen();
+			}
+		} else {
+			if (elem.requestFullscreen) {
+				elem.requestFullscreen();
+			} else if (elem.mozRequestFullScreen) {
+				elem.mozRequestFullScreen();
+			} else if (elem.webkitRequestFullscreen) { /* Safari */
+				elem.webkitRequestFullscreen();
+			} else if (elem.msRequestFullscreen) { /* IE11 */
+				elem.msRequestFullscreen();
+			}
+		}
+	}
 	this._.search.onclick = e => Loda.display('search');
 	this._.jump.onclick = e => Loda.display('jump');
 	this._.download_chapter.onclick = () => DownloadManagerObj.downloadChapter();
@@ -1744,6 +1772,7 @@ function UI_Reader(o) {
 		.attach(this._.spread_button, 'Change two-page mode [Q]')
 		.attach(this._.settings_button, 'Advanced settings... [O]')
 		.attach(this._.download_chapter, 'Download chapter in the background')
+		.attach(this._.fullscreen_button, 'Fullscreen... [F11]')
 		//.attach(this._.comment_button, 'Go to comments [C]')
 		// .attach(this._.fit_none, 'Images are displayed in natural resolution.')
 		// .attach(this._.fit_all, 'Images expand to width or height.')
@@ -2226,7 +2255,16 @@ const SCROLL_X = 3;
 			this.moveWrappers(0, true);
 		}
 	}
-
+	this.getAreas = function(){
+		let box = this.$.getBoundingClientRect();
+		return [
+			0,
+			box.width * 0.35 + box.left,
+			box.width * 0.5 + box.left,
+			box.width * 0.65 + box.left,
+			box.width + box.left
+		];
+	}
 	this.mouseHandler = function(e) {
 		if(e.type == 'mousedown') {
 			this.mouseHandler.dead = false;
@@ -2266,14 +2304,7 @@ const SCROLL_X = 3;
 		}
 		if(e.button != 0) return;
 		if(Settings.get('bhv.clickTurnPage') === false) return;
-	var box = this.$.getBoundingClientRect();
-	var areas = [
-			0,
-			box.width * 0.35 + box.left,
-			box.width * 0.5 + box.left,
-			box.width * 0.65 + box.left,
-			box.width + box.left
-		];
+	var areas = this.getAreas();
 		areas.push(e.pageX);
 		areas.sort((a,b) => a - b);
 		if(e.type == 'click') {
@@ -2296,7 +2327,7 @@ const SCROLL_X = 3;
 				default:
 					break;
 			}
-		}else{
+		} else {
 			if(this.mouseHandler.previousArea == areas.indexOf(e.pageX))
 				return;
 			this.mouseHandler.previousArea = areas.indexOf(e.pageX);
@@ -2349,7 +2380,52 @@ const SCROLL_X = 3;
 	this.$.onmousemove = e => this.mouseHandler(e);
 	this.$.onclick = e => this.mouseHandler(e);
 	this.$.onmouseleave = e => this.mouseHandler(e);
-
+	// Can't call another function, has to be in the initial event handler
+	// Otherwise browsers will refuse to open full screen.
+	this.$.ondblclick = e => {
+		if (this.openPinTimeout){
+			clearTimeout(this.openPinTimeout);
+			this.openPinTimeout = null;
+		}
+		if (Settings.get('bhv.clickTurnPage') === false) return;
+		if (document.fullscreenEnabled === false) return;
+		let areas = this.getAreas();
+		areas.push(e.pageX);
+		areas.sort((a, b) => a - b);
+		let elem = document.documentElement;
+		let isInFullScreen = (document.fullscreenElement && true) ||
+			(document.webkitFullscreenElement && true) ||
+			(document.mozFullScreenElement && true) ||
+			(document.msFullscreenElement && true);
+		switch (areas.indexOf(e.pageX)) {
+			case 2:
+			case 3:
+				if (isInFullScreen){
+					if (document.exitFullscreen) {
+						document.exitFullscreen();
+					} else if (document.webkitExitFullscreen) {
+						document.webkitExitFullscreen();
+					} else if (document.mozCancelFullScreen) {
+						document.mozCancelFullScreen();
+					} else if (document.msExitFullscreen) {
+						document.msExitFullscreen();
+					}
+				} else {
+					if (elem.requestFullscreen) {
+						elem.requestFullscreen();
+					} else if (elem.mozRequestFullScreen) {
+            			elem.mozRequestFullScreen();
+        			} else if (elem.webkitRequestFullscreen) { /* Safari */
+						elem.webkitRequestFullscreen();
+					} else if (elem.msRequestFullscreen) { /* IE11 */
+						elem.msRequestFullscreen();
+					}
+				}
+				break;
+			default:
+				break;
+		}
+	}
 	this.resizeSensor = new ResizeSensor(this.$, this.updateWides);
 
 	// this.S.mapIn({

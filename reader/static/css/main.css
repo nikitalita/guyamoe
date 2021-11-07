@@ -284,6 +284,13 @@ aside header > .guya {
 	transform: scale(-1, 1);
 }
 
+.ico-btn.fullscreen {
+	cursor: pointer;
+}
+.ico-btn.fullscreen:before {
+	content: "\e910";
+}
+
 .ico-btn.download:before {
 	content: "\e938";
 }
@@ -458,6 +465,9 @@ aside header > .guya {
 [data-apr\.selpinned].ico-btn:before {
 	content: "\e906";
 	transform: rotate(270deg);
+}
+[data-apr\.selpinned="true"].ico-btn:before {
+	content: "\e905";
 }
 [data-apr\.selpinned="true"].ico-btn:before {
 	content: "\e905";
